@@ -1,318 +1,167 @@
 # Yorba Linda Library Study Room Booking System
 
-An automated booking system for Yorba Linda Library study rooms using Python and Selenium WebDriver.
+A production-ready automation tool for booking Yorba Linda Library study rooms. This system eliminates the manual process of checking availability and booking rooms through the library's website.
 
-## Executive Summary
+## What This Does
 
-This system provides a robust, maintainable, and scalable solution for automating library study room bookings. The implementation uses a modular architecture with clean separation of concerns, moving away from monolithic scripts to a production-ready application.
+This tool automatically:
+- Logs into the Yorba Linda Library booking system
+- Finds available study room time slots
+- Books multiple time slots in sequence
+- Provides clear feedback on successful and failed bookings
 
-## Features
+## Key Features
 
-- **Automated Booking**: Book study rooms for specific dates and times
-- **Modular Architecture**: Clean separation of concerns with dedicated modules
-- **Robust Error Handling**: Comprehensive error handling and logging
-- **Secure Credentials**: Environment-based credential management
-- **Flexible Configuration**: Configurable settings via environment variables
-- **Simplified Logging**: Clean, summary-based logging for better user experience
-- **Production Ready**: Built with security, reliability, and maintainability in mind
+- **Simple Command Line Interface**: Book rooms with a single command
+- **Multiple Time Slots**: Book consecutive hours automatically
+- **Secure Credential Storage**: Your library card info stays in environment files
+- **Smart Error Handling**: Continues booking other slots even if one fails
+- **Clean Output**: Shows only what matters - success/failure summaries
 
-## Project Structure
+## Quick Start
 
-```
-library_booking/
-├── config/
-│   ├── .env.example          # Environment variables template
-│   ├── __init__.py
-│   └── settings.py           # Configuration settings
-├── core/
-│   ├── __init__.py
-│   ├── booking_engine.py     # Main booking logic
-│   ├── date_utils.py         # Date manipulation utilities
-│   └── web_driver.py         # Selenium WebDriver service
-├── models/
-│   ├── __init__.py
-│   ├── booking_request.py    # Booking request data model
-│   └── booking_result.py     # Booking result data model
-├── services/
-│   ├── __init__.py
-│   └── authentication_service.py  # Credential management
-├── tests/
-│   ├── __init__.py
-│   ├── integration/          # Integration tests
-│   └── unit/                 # Unit tests
-├── utils/
-│   ├── __init__.py
-│   └── logger.py             # Logging configuration
-├── main.py                   # Application entry point
-├── requirements.txt          # Python dependencies
-└── README.md                 # This file
-```
-
-## Setup
-
-### Prerequisites
-
-- Python 3.7+
-- Chrome browser
-- ChromeDriver (automatically managed by Selenium 4.0+)
-
-### Installation
-
-1. **Clone the repository**:
+1. **Install Python 3.7+** and Chrome browser
+2. **Clone and setup**:
    ```bash
    git clone <repository-url>
    cd yorba-linda-library-study-room-booking-system
-   ```
-
-2. **Install dependencies**:
-   ```bash
    pip install -r requirements.txt
    ```
-
-3. **Configure environment variables**:
+3. **Add your credentials**:
    ```bash
    cp config/.env.example config/.env
+   # Edit config/.env with your library card number and PIN
    ```
-   
-   Edit `config/.env` and add your library credentials:
-   ```env
-   LIBRARY_CARD_NUMBER=your_card_number
-   LIBRARY_PIN=your_pin
-   ```
-
-4. **Create logs directory**:
+4. **Book a room**:
    ```bash
-   mkdir -p logs
+   python main.py --day "Saturday" --times "10:00am,11:00am" --room "Adult Rm. 1"
    ```
-
-## Usage
-
-### Basic Usage
-
-```bash
-python main.py --day "Saturday" --times "10:00am,11:00am" --room "Adult Rm. 1" --party-size 6
-```
-
-### Command Line Arguments
-
-- `--day`: Day of the week to book (e.g., "Saturday", "Monday")
-- `--times`: Comma-separated list of times (e.g., "10:00am,11:00am,2:00pm")
-- `--room`: Room name (e.g., "Adult Rm. 1")
-- `--party-size`: Number of people (default: 6)
-
-### Examples
-
-```bash
-# Book a single time slot
-python main.py --day "Saturday" --times "10:00am" --room "Adult Rm. 1"
-
-# Book multiple time slots
-python main.py --day "Sunday" --times "1:00pm,2:00pm,3:00pm" --room "Adult Rm. 2" --party-size 4
-
-# Book for next Monday
-python main.py --day "Monday" --times "9:00am" --room "Adult Rm. 1" --party-size 2
-```
 
 ## Configuration
 
-### Environment Variables
-
-All configuration is managed through environment variables in `config/.env`:
+Edit `config/.env` with your library information:
 
 ```env
-# Required: Library Credentials
-LIBRARY_CARD_NUMBER=your_card_number
-LIBRARY_PIN=your_pin
+# Required: Your library credentials
+LIBRARY_CARD_NUMBER=1234567890123
+LIBRARY_PIN=1234
 
-# Optional: WebDriver Settings
+# Optional: Run browser in background (recommended)
 HEADLESS_MODE=true
 
-# Optional: Logging Settings
+# Optional: Logging preferences
 LOG_LEVEL=INFO
-LOG_FORMAT=json
-LOG_FILE_PATH=./logs/booking.log
 ```
 
-### Default Settings
+**Note**: ChromeDriver is automatically managed by Selenium 4.0+ - no manual installation needed.
 
-- **Party Size**: 6 people
-- **Timeout**: 30 seconds for web operations
-- **Headless Mode**: Enabled (browser runs in background)
-- **Log Level**: INFO
-- **Log Format**: JSON
+## How to Use
 
-## Architecture
-
-### Design Philosophy
-
-This system was designed to address common issues in automation scripts:
-- **Security**: No hardcoded credentials, secure environment-based configuration
-- **Maintainability**: Modular design with single responsibility principle
-- **Reliability**: Comprehensive error handling and graceful degradation
-- **Scalability**: Clean interfaces that allow for easy extension
-
-### Core Components
-
-#### 1. BookingEngine (Core Business Logic)
-```python
-class BookingEngine:
-    def __init__(self, config: BookingConfig)
-    def create_booking_request(self, day: str, times: List[str], room: str) -> BookingRequest
-    def execute_booking(self, request: BookingRequest) -> BookingResult
-    def validate_booking_parameters(self, request: BookingRequest) -> bool
+### Basic Command
+```bash
+python main.py --day "Saturday" --times "10:00am,11:00am" --room "Adult Rm. 1"
 ```
 
-#### 2. WebDriverService (Browser Automation)
-```python
-class WebDriverService:
-    def __init__(self, headless: bool = True)
-    def navigate_to_booking_page(self) -> None
-    def select_time_slots(self, slots: List[TimeSlot]) -> bool
-    def authenticate(self, credentials: Credentials) -> bool
-    def submit_booking_form(self, form_data: BookingFormData) -> bool
+### Options
+- `--day`: Which day to book ("Saturday", "Sunday", "Monday", etc.)
+- `--times`: Time slots separated by commas ("10:00am,11:00am,2:00pm")
+- `--room`: Room name ("Adult Rm. 1", "Adult Rm. 2", etc.)
+- `--party-size`: Number of people (default: 6)
+
+### Common Examples
+
+```bash
+# Book 3 hours on Saturday morning
+python main.py --day "Saturday" --times "9:00am,10:00am,11:00am" --room "Adult Rm. 1"
+
+# Book Sunday afternoon for 4 people
+python main.py --day "Sunday" --times "1:00pm,2:00pm" --room "Adult Rm. 2" --party-size 4
+
+# Book single slot for Monday
+python main.py --day "Monday" --times "3:00pm" --room "Adult Rm. 1"
 ```
 
-#### 3. AuthenticationService (Credential Management)
-```python
-class AuthenticationService:
-    def load_credentials(self) -> Credentials
-    def validate_credentials(self, credentials: Credentials) -> bool
-    def encrypt_credentials(self, credentials: Credentials) -> str
-```
-
-#### 4. Date Utilities
-Handles date calculations and formatting with robust error handling.
-
-### Data Models
-
-#### BookingRequest
-```python
-@dataclass
-class BookingRequest:
-    target_date: datetime.date
-    time_slots: List[str]
-    room_name: str
-    party_size: int
-    user_credentials: Credentials
-```
-
-#### BookingResult
-```python
-@dataclass
-class BookingResult:
-    success: bool
-    booking_id: Optional[str]
-    error_message: Optional[str]
-    timestamp: datetime.datetime
-```
-
-### Key Improvements Over Monolithic Approach
-
-#### Security Enhancements
-- **Environment variables**: Store credentials in `.env` files
-- **Input validation**: Sanitize all user inputs
-- **Secure logging**: Never log sensitive information
-- **Cross-platform compatibility**: No hardcoded paths
-
-#### Reliability Features
-- **Graceful degradation**: Continue booking available slots if some fail
-- **Comprehensive error handling**: Specific exception types for different failure modes
-- **Retry mechanisms**: Built-in retry logic for transient failures
-- **Health checks**: Validate system state before booking attempts
-
-#### Maintainability
-- **Single responsibility**: Each module has a clear, focused purpose
-- **Loose coupling**: Components interact through well-defined interfaces
-- **Extensibility**: Easy to add new features without modifying core logic
-- **Testing**: Modular design enables comprehensive unit and integration testing
-
-## Logging
-
-The system provides clean, user-friendly logging:
-
-- **Summary-Based**: Focus on outcomes rather than step-by-step details
-- **File Logging**: Detailed logs saved to `./logs/` with rotation
-- **Console Output**: Clean, emoji-enhanced status messages
-- **Configurable Format**: JSON for file logs, simple text for console
-- **Multiple Levels**: DEBUG, INFO, WARNING, ERROR, CRITICAL
-
-### Example Output
+### What You'll See
 ```
 ✅ Successfully booked 2 time slot(s) for Adult Rm. 1 on 2024-01-15
 ❌ Failed to book 1 time slot(s)
 ```
 
-## Security
-
-- **Environment Variables**: Credentials stored in `.env` files
-- **No Hardcoded Secrets**: All sensitive data externalized
-- **Safe Logging**: Credentials never logged
-- **Input Validation**: All inputs validated before processing
-
 ## Troubleshooting
 
 ### Common Issues
 
-1. **ChromeDriver Issues**:
-   - Ensure Chrome browser is installed
-   - Selenium 4.0+ manages ChromeDriver automatically
+**"Login failed" or credential errors:**
+- Double-check your library card number and PIN in `config/.env`
+- Make sure you can log in manually on the library website
 
-2. **Login Failures**:
-   - Verify library card number and PIN in `.env`
-   - Check if library website is accessible
+**"Room not found" or booking failures:**
+- Verify the exact room name (check the library website)
+- Ensure the time slots are available
+- Try booking fewer time slots at once
 
-3. **Booking Failures**:
-   - Verify room names and time formats
-   - Check if requested times are available
-   - Review logs for detailed error information
+**Browser or ChromeDriver issues:**
+- Make sure Chrome browser is installed
+- Try setting `HEADLESS_MODE=false` to see what's happening
 
 ### Debug Mode
 
-Enable debug logging:
+To see detailed logs:
 ```env
 LOG_LEVEL=DEBUG
-```
-
-Run with visible browser:
-```env
 HEADLESS_MODE=false
 ```
 
-## Development
+## How It Works
 
-### Running Tests
+The system uses Selenium WebDriver to automate the library's booking website:
 
-```bash
-# Run all tests
-python -m pytest tests/
+1. **Loads your credentials** from the `.env` file
+2. **Opens the library booking page** (in background by default)
+3. **Logs in** with your library card number and PIN
+4. **Finds and clicks** each requested time slot
+5. **Fills out the booking form** with party size
+6. **Submits the booking** and confirms success
+7. **Reports results** for each time slot attempted
 
-# Run unit tests only
-python -m pytest tests/unit/
+## Project Structure
 
-# Run integration tests only
-python -m pytest tests/integration/
+```
+├── config/           # Configuration and credentials
+├── core/             # Main booking logic and web automation
+├── models/           # Data structures for requests and results
+├── services/         # Authentication and credential management
+├── utils/            # Logging utilities
+├── main.py           # Command-line interface
+└── requirements.txt  # Python dependencies
 ```
 
-### Code Style
+## Security & Privacy
 
-The project follows PEP 8 guidelines. Use tools like `black` and `flake8` for formatting and linting.
+- **Your credentials stay local** in the `.env` file on your computer
+- **No data is sent anywhere** except to the library's official website
+- **Credentials are never logged** or stored in log files
+- **Browser runs in background** by default for privacy
+
+## Requirements
+
+- **Python 3.7+**
+- **Chrome browser** (ChromeDriver auto-managed)
+- **Valid Yorba Linda Library card**
+
+## Dependencies
+
+Only one external dependency:
+- `python-dotenv` - for loading environment variables
 
 ## Contributing
 
+Contributions welcome! Please:
 1. Fork the repository
 2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Ensure all tests pass
-6. Submit a pull request
+3. Test your changes
+4. Submit a pull request
 
 ## License
 
 See LICENSE file for details.
-
-## Support
-
-For issues and questions:
-1. Check the troubleshooting section
-2. Review the logs for error details
-3. Open an issue with detailed information
