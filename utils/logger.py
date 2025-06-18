@@ -12,10 +12,7 @@ class JsonFormatter(logging.Formatter):
         log_record = {
             "timestamp": self.formatTime(record, self.datefmt),
             "level": record.levelname,
-            "message": record.getMessage(),
-            "module": record.module,
-            "funcName": record.funcName,
-            "lineno": record.lineno
+            "message": record.getMessage()
         }
         if record.exc_info:
             log_record['exc_info'] = self.formatException(record.exc_info)
@@ -43,16 +40,14 @@ def setup_logger():
     if settings.LOG_FORMAT == 'json':
         file_formatter = JsonFormatter()
     else:
-        file_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(module)s - %(funcName)s - %(message)s')
+        file_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
     file_handler.setFormatter(file_formatter)
     logger.addHandler(file_handler)
 
     # Console Handler
     console_handler = logging.StreamHandler(sys.stdout)
-    if settings.LOG_FORMAT == 'json':
-        console_formatter = JsonFormatter()
-    else:
-        console_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    # Simple console format for better readability
+    console_formatter = logging.Formatter('%(message)s')
     console_handler.setFormatter(console_formatter)
     logger.addHandler(console_handler)
     

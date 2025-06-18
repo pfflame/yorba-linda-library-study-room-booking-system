@@ -24,21 +24,21 @@ class WebDriverService:
         self.driver = webdriver.Chrome(options=chrome_options)
         self.driver.implicitly_wait(settings.IMPLICIT_WAIT_SECONDS)
         self.driver.set_page_load_timeout(settings.PAGE_LOAD_TIMEOUT_SECONDS)
-        logger.info(f"WebDriver initialized. Headless: {headless}")
+        # WebDriver initialized
 
     def navigate_to_page(self, url: str) -> None:
-        logger.info(f"Navigating to {url}")
+        # Navigate to booking page
         self.driver.get(url)
         self.driver.maximize_window() # Maximize after navigation
 
     def select_time_slot(self, slot_label: str) -> bool:
-        logger.info(f"Attempting to select time slot: {slot_label}")
+        # Select time slot
         try:
             slot_element = WebDriverWait(self.driver, settings.TIMEOUT_SECONDS).until(
                 EC.element_to_be_clickable((By.XPATH, f"//a[@aria-label='{slot_label}']"))
             )
             slot_element.click()
-            logger.info(f"Successfully clicked slot: {slot_label}")
+            # Time slot selected successfully
             return True
         except (NoSuchElementException, TimeoutException):
             logger.warning(f"Slot NOT found/clickable: {slot_label}. Possibly unavailable.")
@@ -95,7 +95,7 @@ class WebDriverService:
             people_select_el = self.driver.find_element(By.ID, "q16700")
             select_people = Select(people_select_el)
             select_people.select_by_visible_text(str(party_size))
-            logger.info(f"Selected {party_size} people.")
+            # Party size selected
 
             agree_checkbox = self.driver.find_element(
                 By.XPATH, "//input[@type='checkbox' and @name='q14992[]' and @value='I agree']"
@@ -135,7 +135,7 @@ class WebDriverService:
                 ))
             )
             actual_text = success_h1.text.strip()
-            logger.info(f"Booking succeeded! Confirmation heading: '{actual_text}'")
+            # Booking confirmation detected
             return True
         except TimeoutException:
             logger.warning("No booking confirmation found. Booking might have failed or UI changed.")

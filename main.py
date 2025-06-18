@@ -15,8 +15,6 @@ def main():
     
     args = parser.parse_args()
 
-    logger.info("Starting library room booking process...")
-
     auth_service = AuthenticationService()
     try:
         credentials = auth_service.load_credentials()
@@ -39,25 +37,21 @@ def main():
         user_credentials=credentials
     )
 
-    logger.info(f"Booking request created: Date: {target_date}, Times: {times_list}, Room: {args.room}, Party: {args.party_size}")
-
     engine = BookingEngine()
     results = engine.execute_booking(booking_request)
 
-    all_successful = True
-    for result in results:
-        if result.success:
-            logger.info(f"Booking successful for slot: {result.details.get('slot', 'N/A') if result.details else 'N/A'}! Result: {result}")
-        else:
-            all_successful = False
-            logger.error(f"Booking failed for slot: {result.details.get('slot', 'N/A') if result.details else 'N/A'}. Result: {result}")
+    # Summary logging only
+    successful_bookings = [r for r in results if r.success]
+    failed_bookings = [r for r in results if not r.success]
     
-    if all_successful and results:
-        logger.info("All requested bookings were successful.")
-    elif not results:
-        logger.error("No booking attempts were made or results returned.")
-    else:
-        logger.warning("One or more booking attempts failed. Please check the logs above.")
+    if successful_bookings:
+        logger.info(f"✅ Successfully booked {len(successful_bookings)} time slot(s) for {args.room} on {target_date}")
+    
+    if failed_bookings:
+        logger.error(f"❌ Failed to book {len(failed_bookings)} time slot(s)")
+    
+    if not results:
+        logger.error("❌ No booking attempts were made")
 
 if __name__ == "__main__":
     main()

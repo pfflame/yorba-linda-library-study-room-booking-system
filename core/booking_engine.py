@@ -13,12 +13,10 @@ from selenium.webdriver.support import expected_conditions as EC
 class BookingEngine:
     def __init__(self):
         self.auth_service = AuthenticationService()
-        logger.info("BookingEngine initialized.")
 
     def _generate_slot_labels(self, request: BookingRequest) -> List[str]:
         """Generates the aria-labels for clicking time slots."""
         if request.slot_labels_to_click:
-            logger.debug(f"Using pre-computed slot labels: {request.slot_labels_to_click}")
             return request.slot_labels_to_click
         
         dow_label = format_dow_label(request.target_date)
@@ -26,7 +24,6 @@ class BookingEngine:
             f"{t} {dow_label} - {request.room_name} - Available"
             for t in request.time_slots
         ]
-        logger.debug(f"Generated slot labels: {slot_labels}")
         return slot_labels
 
     def validate_booking_parameters(self, request: BookingRequest) -> bool:
@@ -50,7 +47,7 @@ class BookingEngine:
         return True
 
     def execute_booking(self, request: BookingRequest) -> List[BookingResult]:
-        logger.info(f"Executing booking for date: {request.target_date}, room: {request.room_name}, times: {request.time_slots}")
+        # Execute booking for the requested slots
         if not self.validate_booking_parameters(request):
             return [BookingResult(success=False, error_message="Invalid booking parameters.")]
 
@@ -61,7 +58,7 @@ class BookingEngine:
         results: List[BookingResult] = []
 
         for slot_label in all_slot_labels:
-            logger.info(f"Attempting to book slot: {slot_label}")
+            # Attempt to book this slot
             driver_service = None  # Initialize to None for finally block
             try:
                 driver_service = WebDriverService(headless=settings.HEADLESS_MODE)
@@ -94,7 +91,7 @@ class BookingEngine:
                     continue
 
                 if driver_service.check_booking_confirmation():
-                    logger.info(f"Booking confirmed successfully for slot: {slot_label}!")
+                    # Booking confirmed successfully
                     results.append(BookingResult(success=True, booking_id=f"CONFIRMED_VIA_UI_{slot_label.replace(' ', '_')}", details={"slot": slot_label}))
                 else:
                     logger.warning(f"Booking submitted for slot {slot_label} but confirmation screen not found.")
@@ -106,7 +103,7 @@ class BookingEngine:
             finally:
                 if driver_service:
                     driver_service.close_driver()
-                logger.info(f"Booking execution finished for slot: {slot_label}.")
+                # Slot booking attempt completed
         
-        logger.info(f"Overall booking execution finished. Results: {results}")
+        # All booking attempts completed
         return results
