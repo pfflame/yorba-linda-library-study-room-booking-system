@@ -1,3 +1,4 @@
+# Web driver service for browser automation
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait, Select
@@ -54,6 +55,9 @@ class WebDriverService:
         except TimeoutException:
             logger.error("Submit Times button not found or clickable.")
             return False
+        except Exception as e:
+            logger.error(f"Unexpected error clicking Submit Times button: {e}")
+            return False
 
     def perform_login(self, credentials: Credentials) -> bool:
         try:
@@ -76,6 +80,9 @@ class WebDriverService:
             return True
         except (NoSuchElementException, TimeoutException) as e:
             logger.error(f"Error during login: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error during login: {e}")
             return False
 
     def fill_booking_form(self, party_size: int) -> bool:
@@ -100,6 +107,9 @@ class WebDriverService:
         except (NoSuchElementException, TimeoutException) as e:
             logger.error(f"Error filling booking form: {e}")
             return False
+        except Exception as e:
+            logger.error(f"Unexpected error filling booking form: {e}")
+            return False
 
     def submit_final_booking(self) -> bool:
         try:
@@ -111,6 +121,9 @@ class WebDriverService:
             return True
         except NoSuchElementException:
             logger.error("Submit My Booking button not found.")
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error submitting final booking: {e}")
             return False
 
     def check_booking_confirmation(self) -> bool:

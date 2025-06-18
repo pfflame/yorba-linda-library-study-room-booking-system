@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import datetime
 from typing import List, Optional
+from dataclasses import dataclass
 
 @dataclass
 class Credentials:

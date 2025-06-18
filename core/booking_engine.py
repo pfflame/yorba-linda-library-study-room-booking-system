@@ -1,5 +1,4 @@
 from typing import List
-
 from models.booking_request import BookingRequest, Credentials
 from models.booking_result import BookingResult
 from core.web_driver import WebDriverService

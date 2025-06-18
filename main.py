@@ -47,10 +47,10 @@ def main():
     all_successful = True
     for result in results:
         if result.success:
-            logger.info(f"Booking successful for slot: {result.details.get('slot', 'N/A')}! Result: {result}")
+            logger.info(f"Booking successful for slot: {result.details.get('slot', 'N/A') if result.details else 'N/A'}! Result: {result}")
         else:
             all_successful = False
-            logger.error(f"Booking failed for slot: {result.details.get('slot', 'N/A')}. Result: {result}")
+            logger.error(f"Booking failed for slot: {result.details.get('slot', 'N/A') if result.details else 'N/A'}. Result: {result}")
     
     if all_successful and results:
         logger.info("All requested bookings were successful.")

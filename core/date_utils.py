@@ -1,3 +1,4 @@
+# Date utility functions
 import datetime
 
 def day_to_weekday_index(day_name: str) -> int:
@@ -28,7 +29,13 @@ def get_next_day_of_week(day_name: str) -> datetime.date:
     """
     today = datetime.date.today()
     target_idx = day_to_weekday_index(day_name)
-    offset = (target_idx - today.weekday()) % 7
+    current_idx = today.weekday()
+    
+    # Calculate days until target day
+    # If target day is today or later this week, use direct offset
+    # If target day is earlier in the week, go to next week
+    offset = (target_idx - current_idx) % 7
+    
     return today + datetime.timedelta(days=offset)
 
 def format_dow_label(dt: datetime.date) -> str:
