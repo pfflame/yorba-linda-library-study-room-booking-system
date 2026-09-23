@@ -19,3 +19,6 @@ logs/
 .idea/
 *.sublime-project
 *.sublime-workspace
+# Local schedule and duplicate-booking protection
+config/booking.json
+state/

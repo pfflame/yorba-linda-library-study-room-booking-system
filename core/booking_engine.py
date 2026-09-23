@@ -1,109 +1,53 @@
-from typing import List
-from models.booking_request import BookingRequest, Credentials
-from models.booking_result import BookingResult
+from core.date_utils import validate_request
+from core.state import BookingState
 from core.web_driver import WebDriverService
-from core.date_utils import format_dow_label
+from models.booking_result import BookingResult
 from services.authentication_service import AuthenticationService
 from utils.logger import logger
-from config import settings
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 
 class BookingEngine:
-    def __init__(self):
-        self.auth_service = AuthenticationService()
-
-    def _generate_slot_labels(self, request: BookingRequest) -> List[str]:
-        """Generates the aria-labels for clicking time slots."""
-        if request.slot_labels_to_click:
-            return request.slot_labels_to_click
-        
-        dow_label = format_dow_label(request.target_date)
-        slot_labels = [
-            f"{t} {dow_label} - {request.room_name} - Available"
-            for t in request.time_slots
-        ]
-        return slot_labels
-
-    def validate_booking_parameters(self, request: BookingRequest) -> bool:
-        """Validates the booking request parameters."""
-        if not request.target_date:
-            logger.error("Target date is missing.")
-            return False
-        if not request.time_slots:
-            logger.error("Time slots are missing.")
-            return False
-        if not request.room_name:
-            logger.error("Room name is missing.")
-            return False
-        if not (1 <= request.party_size <= 10): # Assuming max 10, adjust as needed
-            logger.error(f"Invalid party size: {request.party_size}")
-            return False
-        if not self.auth_service.validate_credentials(request.user_credentials):
-            logger.error("Invalid user credentials.")
-            return False
-        logger.info("Booking parameters validated successfully.")
-        return True
-
-    def execute_booking(self, request: BookingRequest) -> List[BookingResult]:
-        # Execute booking for the requested slots
-        if not self.validate_booking_parameters(request):
-            return [BookingResult(success=False, error_message="Invalid booking parameters.")]
-
-        all_slot_labels = self._generate_slot_labels(request)
-        if not all_slot_labels:
-             return [BookingResult(success=False, error_message="Could not generate slot labels for booking.")]
-
-        results: List[BookingResult] = []
-
-        for slot_label in all_slot_labels:
-            # Attempt to book this slot
-            driver_service = None  # Initialize to None for finally block
-            try:
-                driver_service = WebDriverService(headless=settings.HEADLESS_MODE)
-                driver_service.navigate_to_page(request.booking_url)
-
-                WebDriverWait(driver_service.driver, settings.TIMEOUT_SECONDS).until(
-                    EC.presence_of_element_located((By.CSS_SELECTOR, "a.s-lc-eq-avail"))
-                )
-                logger.info("Available time tiles have loaded on booking page.")
-
-                if not driver_service.select_time_slot(slot_label):
-                    logger.warning(f"Failed to select time slot: {slot_label}")
-                    results.append(BookingResult(success=False, error_message=f"Failed to select time slot: {slot_label}", details={"slot": slot_label}))
-                    continue # Try next slot
-
-                if not driver_service.submit_times():
-                    results.append(BookingResult(success=False, error_message="Failed to submit selected times.", details={"slot": slot_label}))
-                    continue
-
-                if not driver_service.perform_login(request.user_credentials):
-                    results.append(BookingResult(success=False, error_message="Login failed.", details={"slot": slot_label}))
-                    continue
-
-                if not driver_service.fill_booking_form(request.party_size):
-                    results.append(BookingResult(success=False, error_message="Failed to fill booking form details.", details={"slot": slot_label}))
-                    continue
-
-                if not driver_service.submit_final_booking():
-                    results.append(BookingResult(success=False, error_message="Failed to submit final booking.", details={"slot": slot_label}))
-                    continue
-
-                if driver_service.check_booking_confirmation():
-                    # Booking confirmed successfully
-                    results.append(BookingResult(success=True, booking_id=f"CONFIRMED_VIA_UI_{slot_label.replace(' ', '_')}", details={"slot": slot_label}))
-                else:
-                    logger.warning(f"Booking submitted for slot {slot_label} but confirmation screen not found.")
-                    results.append(BookingResult(success=False, error_message="Booking submitted but confirmation not verified.", details={"slot": slot_label}))
-
-            except Exception as e:
-                logger.error(f"An unexpected error occurred during booking for slot {slot_label}: {e}", exc_info=True)
-                results.append(BookingResult(success=False, error_message=f"Unexpected error for slot {slot_label}: {str(e)}", details={"slot": slot_label}))
-            finally:
-                if driver_service:
-                    driver_service.close_driver()
-                # Slot booking attempt completed
-        
-        # All booking attempts completed
-        return results
+    def execute_booking(self, request, dry_run=False, availability_only=False):
+        driver = None
+        state = None
+        submitted = False
+        try:
+            if not availability_only:
+                validate_request(request)
+            if not (dry_run or availability_only) and not AuthenticationService().validate_credentials(request.user_credentials):
+                raise ValueError("Library credentials are missing")
+            driver = WebDriverService()
+            slots = driver.availability(request)
+            logger.info("Available 1-hour start times for %s on %s: %s", request.room_name, request.target_date, ", ".join(sorted(slots)) or "none")
+            if availability_only:
+                return BookingResult(True, details={"available": sorted(slots), "mode": "availability"})
+            missing = set(request.time_slots) - set(slots)
+            if missing:
+                raise ValueError("Unavailable start time(s): " + ", ".join(sorted(missing)))
+            if dry_run:
+                return BookingResult(True, details={"mode": "dry-run", "times": request.time_slots})
+            driver.select_slots(request, slots)
+            driver.perform_login(request.user_credentials)
+            driver.fill_booking_form(request.party_size)
+            # Record before the irreversible click. An ambiguous response is never retried.
+            state = BookingState()
+            state.reserve(request)
+            submitted = True
+            driver.submit_final_booking()
+            if not driver.check_booking_confirmation():
+                raise ValueError("Booking confirmation is missing")
+            state.confirm(request)
+            return BookingResult(True, details={"mode": "booked", "times": request.time_slots})
+        except ValueError as e:
+            return BookingResult(False, error_message=str(e), details={"submission_uncertain": submitted})
+        except Exception as e:
+            # Browser errors may contain page data; do not log their full contents.
+            message = "Booking outcome uncertain; check My Bookings before retrying" if submitted else "Browser step failed; check connectivity, credentials, or changed form controls"
+            return BookingResult(False, error_message=f"{message} ({type(e).__name__})", details={"submission_uncertain": submitted})
+        finally:
+            if state:
+                state.close()
+            if driver:
+                try:
+                    driver.close_driver()
+                except Exception:
+                    logger.warning("Browser cleanup failed")

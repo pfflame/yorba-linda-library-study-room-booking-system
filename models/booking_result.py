@@ -1,12 +1,8 @@
-from dataclasses import dataclass
-import datetime
-from typing import Optional
-from dataclasses import dataclass
-
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
 @dataclass
 class BookingResult:
     success: bool
-    booking_id: Optional[str] = None
-    error_message: Optional[str] = None
-    timestamp: datetime.datetime = datetime.datetime.now()
-    details: Optional[dict] = None # For any additional info, like confirmed slots
+    error_message: str | None = None
+    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    details: dict = field(default_factory=dict)

@@ -1,0 +1,8 @@
+{
+  "days_ahead": 3,
+  "target_weekday": 5,
+  "times": ["14:00", "15:00"],
+  "room": "Child Rm. 2",
+  "party_size": 4,
+  "notify_email": "pfflame@gmail.com"
+}
